@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 
 const NUM_STEPS = 8;
 const METRONOME_NUMBER = 2;
+const BEATS_PER_TICK = 4;
 
 const BeatPad: React.FC = () => {
   const [sequence, setSequence] = useState<boolean[]>(
@@ -37,7 +38,7 @@ const BeatPad: React.FC = () => {
 
   useEffect(() => {
     const tempoInterval = (60 / tempo) * 1000;
-    const beatsInterval = (60 / tempo) * (1 / 4) * 1000;
+    const beatsInterval = (60 / tempo) * (1 / BEATS_PER_TICK) * 1000;
     const tempoTimer = setInterval(playSequence, tempoInterval);
     const beatsTimer = setInterval(playBeats, beatsInterval);
     return () => {
@@ -48,16 +49,26 @@ const BeatPad: React.FC = () => {
 
   return (
     <div className="beat-pad">
-      <div>
+      <div style={{ display: "flex" }}>
         {metronome.map((isMetronome, step) => {
           return (
-            <button
-              key={step}
-              className={`beat-pad-step ${
-                step === tempoBeat ? "active-tempo-beat" : ""
-              }`}
-              onClick={() => toggleStep(step)}
-            />
+            <div key={step}>
+              <button
+                disabled
+                className={`beat-pad-step ${
+                  step === tempoBeat ? "active-tempo-beat" : ""
+                }`}
+              />
+              {new Array(BEATS_PER_TICK - 1).fill(null).map((e, i) => {
+                return (
+                  <button
+                    key={i}
+                    disabled
+                    className={`beat-pad-step`}
+                  />
+                );
+              })}
+            </div>
           );
         })}
       </div>
@@ -67,7 +78,7 @@ const BeatPad: React.FC = () => {
             <button
               key={step}
               className={`beat-pad-step ${isBeat ? "active" : ""} ${
-                currentBeat === step ? "active-beat" : ""
+                currentBeat === step ? "active-tempo-beat" : ""
               }`}
               onClick={() => toggleStep(step)}
             />
