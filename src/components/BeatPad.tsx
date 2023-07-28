@@ -1,10 +1,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 
 const NUM_STEPS = 8;
+const METRONOME_NUMBER = 2;
 
 const BeatPad: React.FC = () => {
   const [sequence, setSequence] = useState<boolean[]>(
     new Array(NUM_STEPS).fill(false)
+  );
+  const [metronome, setMetronome] = useState<boolean[]>(
+    new Array(METRONOME_NUMBER).fill(false)
   );
   const [currentBeat, setCurrentBeat] = useState<number>(0);
   const [tempoBeat, setTempoBeat] = useState<number>(0);
@@ -22,27 +26,54 @@ const BeatPad: React.FC = () => {
   };
 
   const playSequence = useCallback(() => {
-    setTempoBeat((prevBeat) => (prevBeat + 1) % NUM_STEPS);
+    setTempoBeat((prevBeat) => (prevBeat + 1) % METRONOME_NUMBER);
+    console.log(sequence);
+  }, [sequence]);
+
+  const playBeats = useCallback(() => {
+    setCurrentBeat((prevBeat) => (prevBeat + 1) % NUM_STEPS);
     console.log(sequence);
   }, [sequence]);
 
   useEffect(() => {
     const tempoInterval = (60 / tempo) * 1000;
+    const beatsInterval = (60 / tempo) * (1 / 4) * 1000;
     const tempoTimer = setInterval(playSequence, tempoInterval);
-    return () => clearInterval(tempoTimer);
-  }, [tempo, sequence, playSequence]);
+    const beatsTimer = setInterval(playBeats, beatsInterval);
+    return () => {
+      clearInterval(tempoTimer);
+      clearInterval(beatsTimer);
+    };
+  }, [tempo, sequence, playSequence, playBeats]);
 
   return (
     <div className="beat-pad">
-      {sequence.map((isBeat, step) => (
-        <button
-          key={step}
-          className={`beat-pad-step ${isBeat ? "active" : ""} ${
-            currentBeat === step ? "active-beat" : ""
-          } ${tempoBeat === step ? "active-tempo-beat" : ""}`}
-          onClick={() => toggleStep(step)}
-        />
-      ))}
+      <div>
+        {metronome.map((isMetronome, step) => {
+          return (
+            <button
+              key={step}
+              className={`beat-pad-step ${
+                step === tempoBeat ? "active-tempo-beat" : ""
+              }`}
+              onClick={() => toggleStep(step)}
+            />
+          );
+        })}
+      </div>
+      <div>
+        {sequence.map((isBeat, step) => {
+          return (
+            <button
+              key={step}
+              className={`beat-pad-step ${isBeat ? "active" : ""} ${
+                currentBeat === step ? "active-beat" : ""
+              }`}
+              onClick={() => toggleStep(step)}
+            />
+          );
+        })}
+      </div>
       <input
         type="number"
         disabled
