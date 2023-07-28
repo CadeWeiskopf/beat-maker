@@ -1,4 +1,3 @@
-// In BeatPad.tsx
 import React, { useCallback, useEffect, useState } from "react";
 
 const NUM_STEPS = 8;
@@ -23,13 +22,7 @@ const BeatPad: React.FC = () => {
   };
 
   const playSequence = useCallback(() => {
-    const additionalBeats = 4;
-    for (let i = 0; i < additionalBeats; i++) {
-      setTimeout(() => {
-        setCurrentBeat((prevBeat) => (prevBeat + 1) % NUM_STEPS);
-      }, (60 / (tempo * additionalBeats)) * 1000 * i);
-    }
-    setTempoBeat((prevBeat) => (prevBeat + additionalBeats) % NUM_STEPS);
+    setTempoBeat((prevBeat) => (prevBeat + 1) % NUM_STEPS);
     console.log(sequence);
   }, [sequence]);
 
