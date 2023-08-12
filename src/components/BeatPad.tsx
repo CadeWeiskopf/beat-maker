@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 const BeatPad: React.FC = () => {
-  const BPM = 70;
+  const BPM = 120;
 
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [isStarted, setIsStarted] = useState(false);
@@ -13,21 +13,26 @@ const BeatPad: React.FC = () => {
   };
 
   useEffect(() => {
-    const syncWorker = new Worker("worker.js");
-
-    const scheduleBeat = (beatType: string, time: number) => {
-      if (time) {
-        syncWorker.postMessage({ beatType, time });
-      }
-    };
-
     if (isStarted) {
+      const syncWorker = new Worker("worker.js");
       const beatInterval = 60000 / BPM;
-      const interval = setInterval(() => {
-        const time = audioContext?.currentTime || 0;
-        scheduleBeat("kick", time);
-        scheduleBeat("snare", time);
-      }, beatInterval);
+      let nextBeatTime = audioContext?.currentTime || 0;
+
+      const scheduleBeat = (beatType: string) => {
+        syncWorker.postMessage({ beatType });
+      };
+
+      let offset = 0;
+      const scheduleNextBeat = () => {
+        nextBeatTime += beatInterval / 1000;
+        scheduleBeat("kick");
+        // TODO: remove this, actually build a sequence
+        if (offset++ % 2 !== 0) {
+          scheduleBeat("snare");
+        }
+      };
+
+      const interval = setInterval(scheduleNextBeat, beatInterval);
 
       return () => {
         clearInterval(interval);
