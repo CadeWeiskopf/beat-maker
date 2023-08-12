@@ -1,97 +1,56 @@
-import React, { useCallback, useEffect, useState } from "react";
-
-const NUM_STEPS = 8;
-const METRONOME_NUMBER = 2;
-const BEATS_PER_TICK = 4;
+import React, { useState, useEffect } from "react";
+import { bpSyncWorkerScript } from "./beatpad-sync-worker-script";
 
 const BeatPad: React.FC = () => {
-  const [sequence, setSequence] = useState<boolean[]>(
-    new Array(NUM_STEPS).fill(false)
-  );
-  const [metronome, setMetronome] = useState<boolean[]>(
-    new Array(METRONOME_NUMBER).fill(false)
-  );
-  const [currentBeat, setCurrentBeat] = useState<number>(0);
-  const [tempoBeat, setTempoBeat] = useState<number>(0);
+  const BPM = 120;
 
-  const toggleStep = (step: number) => {
-    console.log("toggle", step, sequence[step]);
-    sequence[step] = !sequence[step];
-    setSequence(sequence.map((s) => s));
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [isStarted, setIsStarted] = useState(false);
+
+  const createSyncWorker = () => {
+    return new SharedWorker(
+      URL.createObjectURL(
+        new Blob([bpSyncWorkerScript], { type: "application/javascript" })
+      )
+    );
   };
 
-  const [tempo, setTempo] = useState<number>(120);
+  const syncWorker = createSyncWorker();
 
-  const handleTempoChange = (newTempo: number) => {
-    setTempo(newTempo);
+  const startAudioContext = () => {
+    const context = new AudioContext();
+    setAudioContext(context);
+    setIsStarted(true);
   };
-
-  const playSequence = useCallback(() => {
-    setTempoBeat((prevBeat) => (prevBeat + 1) % METRONOME_NUMBER);
-    console.log(sequence);
-  }, [sequence]);
-
-  const playBeats = useCallback(() => {
-    setCurrentBeat((prevBeat) => (prevBeat + 1) % NUM_STEPS);
-    console.log(sequence);
-  }, [sequence]);
 
   useEffect(() => {
-    const tempoInterval = (60 / tempo) * 1000;
-    const beatsInterval = (60 / tempo) * (1 / BEATS_PER_TICK) * 1000;
-    const tempoTimer = setInterval(playSequence, tempoInterval);
-    const beatsTimer = setInterval(playBeats, beatsInterval);
-    return () => {
-      clearInterval(tempoTimer);
-      clearInterval(beatsTimer);
+    syncWorker.port.start();
+
+    const scheduleBeat = (beatType: string, time: number) => {
+      if (time) {
+        syncWorker.port.postMessage({ beatType, time });
+      }
     };
-  }, [tempo, sequence, playSequence, playBeats]);
+
+    if (isStarted) {
+      const beatInterval = 60000 / BPM;
+      const interval = setInterval(() => {
+        const time = audioContext?.currentTime || 0;
+        scheduleBeat("kick", time);
+        scheduleBeat("snare", time);
+      }, beatInterval);
+
+      return () => {
+        clearInterval(interval);
+        syncWorker.port.close();
+        audioContext?.close();
+      };
+    }
+  }, [isStarted, audioContext, syncWorker.port]);
 
   return (
-    <div className="beat-pad">
-      <div style={{ display: "flex" }}>
-        {metronome.map((isMetronome, step) => {
-          return (
-            <div key={step}>
-              <button
-                disabled
-                className={`beat-pad-step ${
-                  step === tempoBeat ? "active-tempo-beat" : ""
-                }`}
-              />
-              {new Array(BEATS_PER_TICK - 1).fill(null).map((e, i) => {
-                return (
-                  <button
-                    key={i}
-                    disabled
-                    className={`beat-pad-step`}
-                  />
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-      <div>
-        {sequence.map((isBeat, step) => {
-          return (
-            <button
-              key={step}
-              className={`beat-pad-step ${isBeat ? "active" : ""} ${
-                currentBeat === step ? "active-tempo-beat" : ""
-              }`}
-              onClick={() => toggleStep(step)}
-            />
-          );
-        })}
-      </div>
-      <input
-        type="number"
-        disabled
-        onInput={(event: React.FormEvent<HTMLInputElement>) => {
-          handleTempoChange(event.currentTarget.valueAsNumber);
-        }}
-      />
+    <div>
+      {!isStarted && <button onClick={startAudioContext}>Start</button>}
     </div>
   );
 };
