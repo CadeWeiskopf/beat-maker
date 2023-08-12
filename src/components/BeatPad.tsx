@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { bpSyncWorkerScript } from "./beatpad-sync-worker-script";
 
 const BeatPad: React.FC = () => {
-  const BPM = 120;
+  const BPM = 70;
 
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [isStarted, setIsStarted] = useState(false);
-
-  const createSyncWorker = () => {
-    return new SharedWorker(
-      URL.createObjectURL(
-        new Blob([bpSyncWorkerScript], { type: "application/javascript" })
-      )
-    );
-  };
-
-  const syncWorker = createSyncWorker();
 
   const startAudioContext = () => {
     const context = new AudioContext();
@@ -24,11 +13,11 @@ const BeatPad: React.FC = () => {
   };
 
   useEffect(() => {
-    syncWorker.port.start();
+    const syncWorker = new Worker("worker.js");
 
     const scheduleBeat = (beatType: string, time: number) => {
       if (time) {
-        syncWorker.port.postMessage({ beatType, time });
+        syncWorker.postMessage({ beatType, time });
       }
     };
 
@@ -42,11 +31,10 @@ const BeatPad: React.FC = () => {
 
       return () => {
         clearInterval(interval);
-        syncWorker.port.close();
         audioContext?.close();
       };
     }
-  }, [isStarted, audioContext, syncWorker.port]);
+  }, [isStarted, audioContext]);
 
   return (
     <div>
