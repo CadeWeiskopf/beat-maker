@@ -2,9 +2,32 @@ import React, { useState, useEffect } from "react";
 
 const BeatPad: React.FC = () => {
   const BPM = 120;
+  const beatsBetween = 4;
+  const totalBeats = 8;
 
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [isStarted, setIsStarted] = useState(false);
+  let beatStep = 0;
+  const [kickSequence, setKickSequence] = useState([
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+  ]);
+  const [snareSequence, setSnareSequence] = useState([
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+  ]);
 
   const startAudioContext = () => {
     const context = new AudioContext();
@@ -15,7 +38,7 @@ const BeatPad: React.FC = () => {
   useEffect(() => {
     if (isStarted) {
       const syncWorker = new Worker("worker.js");
-      const beatInterval = 60000 / BPM;
+      const beatInterval = 60000 / BPM / beatsBetween;
       let nextBeatTime = audioContext?.currentTime || 0;
 
       const scheduleBeat = (beatType: string) => {
@@ -25,11 +48,21 @@ const BeatPad: React.FC = () => {
       let offset = 0;
       const scheduleNextBeat = () => {
         nextBeatTime += beatInterval / 1000;
-        scheduleBeat("kick");
-        // TODO: remove this, actually build a sequence
-        if (offset++ % 2 !== 0) {
+        if (kickSequence[beatStep]) {
+          scheduleBeat("kick");
+        }
+        if (snareSequence[beatStep]) {
           scheduleBeat("snare");
         }
+        beatStep++;
+        if (beatStep >= totalBeats) {
+          beatStep = 0;
+        }
+        // scheduleBeat("kick");
+        // // TODO: remove this, actually build a sequence
+        // if (offset++ % 2 !== 0) {
+        //   scheduleBeat("snare");
+        // }
       };
 
       const interval = setInterval(scheduleNextBeat, beatInterval);
