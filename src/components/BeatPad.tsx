@@ -35,7 +35,6 @@ const BeatPad: React.FC = () => {
   const startAudioContext = async () => {
     const context = new AudioContext();
     setAudioContext(context);
-    kickAudioRef.current?.play();
     setIsStarted(true);
   };
 
