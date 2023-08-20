@@ -58,11 +58,6 @@ const BeatPad: React.FC = () => {
         if (beatStep >= totalBeats) {
           beatStep = 0;
         }
-        // scheduleBeat("kick");
-        // // TODO: remove this, actually build a sequence
-        // if (offset++ % 2 !== 0) {
-        //   scheduleBeat("snare");
-        // }
       };
 
       const interval = setInterval(scheduleNextBeat, beatInterval);
